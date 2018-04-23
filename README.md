@@ -1,5 +1,5 @@
 # gtranslate_url_addon
-<h3>(Recording steps here to set up GTranslate)</h3>
+<h3>Recording steps here to set up GTranslate</h3>
 
 <ol style="margin-left:1em;">
     <li>Download <a href="http://gtranslate.net/downloads/gtranslate_url_addon.zip">GTranslate URL add-on</a> and unzip it</li>
