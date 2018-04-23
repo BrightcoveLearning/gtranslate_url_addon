@@ -1,0 +1,145 @@
+# This file describes an application. You can have multiple applications
+# in the same project.
+#
+# See https://docs.platform.sh/user_guide/reference/platform-app-yaml.html
+
+# The name of this app. Must be unique within a project.
+name: 'app'
+
+# The runtime the application uses.
+type: 'php:5.6'
+
+# Configuration of the build of this application.
+build:
+    flavor: composer
+
+# The relationships of the application with services or other applications.
+#
+# The left-hand side is the name of the relationship as it will be exposed
+# to the application in the PLATFORM_RELATIONSHIPS variable. The right-hand
+# side is in the form `<service name>:<endpoint name>`.
+relationships:
+    database: 'mysqldb:mysql'
+    solr: 'solrsearch:main'
+#    redis: 'rediscache:redis'
+
+# The configuration of app when it is exposed to the web.
+web:
+    # Specific parameters for different URL prefixes.
+    locations:
+        '/':
+            # The folder from which to serve static assets, for this location.
+            #
+            # This is a filesystem path, relative to the application root.
+            root: 'web'
+
+            # How long to allow static assets from this location to be cached.
+            #
+            # Can be a time in seconds, or -1 for no caching. Times can be
+            # suffixed with "s" (seconds), "m" (minutes), "h" (hours), "d"
+            # (days), "w" (weeks), "M" (months, as 30 days) or "y" (years, as
+            # 365 days).
+            expires: 5m
+
+            # Whether to forward disallowed and missing resources from this
+            # location to the application.
+            #
+            # Can be true, false or a URI path string.
+            passthru: '/index.php'
+
+            # Deny access to static files in this location.
+            allow: false
+
+            # Rules for specific URI patterns.
+            rules:
+                # Allow access to common static files.
+                '\.(jpe?g|png|gif|svgz?|css|js|map|ico|bmp|eot|woff2?|otf|ttf)$':
+                    allow: true
+                '^/robots\.txt$':
+                    allow: true
+                '^/sitemap\.xml$':
+                    allow: true
+                # gtranslate rules
+                '^/(?<glang>af|sq|am|ar|hy|az|eu|be|bn|bs|bg|ca|ceb|ny|zh-CN|zh-TW|co|hr|cs|da|nl|en|eo|et|tl|fi|fr|fy|gl|ka|de|el|gu|ht|ha|haw|iw|hi|hmn|hu|is|ig|id|ga|it|ja|jw|kn|kk|km|ko|ku|ky|lo|la|lv|lt|lb|mk|mg|ms|ml|mt|mi|mr|mn|my|ne|no|ps|fa|pl|pt|pa|ro|ru|sm|gd|sr|st|sn|sd|si|sk|sl|so|es|su|sw|sv|tg|ta|te|th|tr|uk|ur|uz|vi|cy|xh|yi|yo|zu)/(?<gurl>.*)$':
+                    passthru: '/gtranslate/gtranslate.php?glang=$glang&gurl=$gurl'
+
+        '/sites/default/files':
+            # Allow access to all files in the public files directory.
+            allow: true
+            expires: 5m
+            passthru: '/index.php'
+            root: 'web/sites/default/files'
+
+            # Do not execute PHP scripts.
+            scripts: false
+
+            rules:
+                # Provide a longer TTL (2 weeks) for aggregated CSS and JS files.
+                '^/sites/default/files/(css|js)':
+                    expires: 2w
+
+# The size of the persistent disk of the application (in MB).
+disk: 1024
+
+# The 'mounts' describe writable, persistent filesystem mounts in the application. The keys are
+# directory paths, relative to the application root. The values are strings such as
+# 'shared:files/NAME', where NAME is just a unique name for the mount.
+mounts:
+    '/web/sites/default/files': 'shared:files/files'
+    '/tmp': 'shared:files/tmp'
+    '/private': 'shared:files/private'
+    '/drush-backups': 'shared:files/drush-backups'
+
+# The hooks executed at various points in the lifecycle of the application.
+hooks:
+    # The deploy hook runs after your application has been deployed and started.
+    deploy: |
+      cd web
+      drush -y cache-rebuild
+      drush -y updatedb
+      drush -y config-import
+      drush -y entup
+      SOLRIP=$(node -e 'console.log(JSON.parse(new Buffer(process.env.PLATFORM_RELATIONSHIPS, "base64").toString("utf8")).solr.find(v => v.service === "solrsearch").ip)')
+      if [ "$PLATFORM_BRANCH" = dev ]; then
+        # Set solr settings for dev
+        drush -y config-set search_api.server.apachesolr backend_config.connector standard
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.scheme http
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.host "$SOLRIP"
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.port '8080'
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.path '/solr'
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.core mainindex
+        # Set smartling settings for dev
+        drush -y config-set tmgmt.translator.smartling settings.project_id c7b2b8484
+        drush -y config-set tmgmt.translator.smartling settings.key 0b779681-19ad-452a-b878-49a29b6871ae
+        drush -y config-set tmgmt.translator.smartling settings.orgID 'a-ZEmcoCwe9fsON6BbOOwQ'
+      elif [ "$PLATFORM_BRANCH" = stage ]; then
+        # Set solr settings for stage
+        drush -y config-set search_api.server.apachesolr backend_config.connector standard
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.scheme http
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.host "$SOLRIP"
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.port '8080'
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.path '/solr'
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.core mainindex
+        # Set smartling settings for stage
+        drush -y config-set tmgmt.translator.smartling settings.project_id c7b2b8484
+        drush -y config-set tmgmt.translator.smartling settings.key 0b779681-19ad-452a-b878-49a29b6871ae
+        drush -y config-set tmgmt.translator.smartling settings.orgID 'a-ZEmcoCwe9fsON6BbOOwQ'
+      else
+        # Set solr settings for master
+        drush -y config-set search_api.server.apachesolr backend_config.connector standard
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.scheme http
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.host "$SOLRIP"
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.port '8080'
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.path '/solr'
+        drush -y config-set search_api.server.apachesolr backend_config.connector_config.core mainindex
+        # Set smartling settings for master
+        drush -y config-set tmgmt.translator.smartling settings.project_id e91f6f282
+        drush -y config-set tmgmt.translator.smartling settings.key d08956e8-28e6-4c97-b846-793ac76a4da8
+        drush -y config-set tmgmt.translator.smartling settings.orgID Yewpkv2q1Zhfm7vX3E7NIg
+      fi
+
+# The configuration of scheduled execution.
+crons:
+    drupal:
+        spec: '*/20 * * * *'
+        cmd: 'cd web ; drush core-cron'
