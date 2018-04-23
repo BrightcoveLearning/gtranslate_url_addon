@@ -29,7 +29,6 @@ if(isset($get_params['gurl']))
 if(count($get_params)) {
     $page_url .= '?' . http_build_query($get_params);
 }
-$main_lang = 'en';
 if($glang == $main_lang) {
     $page_url = preg_replace('/^[\/]+/', '/', $page_url);
 

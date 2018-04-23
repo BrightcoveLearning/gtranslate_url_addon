@@ -4,7 +4,9 @@
 <ol style="margin-left:1em;">
     <li>Download <a href="http://gtranslate.net/downloads/gtranslate_url_addon.zip">GTranslate URL add-on</a> and unzip it</li>
     <li>Update this repo (gtranslate_url_addon) to keep our local copy current</li>
-    <li>Edit gtranslate/config.php file to set correct main_lang language code</li>
+    <li>Edit gtranslate/config.php file to set correct main_lang language code: <code>$main_lang = 'en';</code>
+
+    ```</li>
     <li>Upload gtranslate folder into www root directory</li>
     <li>Edit/create .htaccess file in www root directory and add the following into the top of the file:
 <pre class="notranslate" style="border:1px solid #ccc;background-color:#efefef;padding:1em;margin-left:0.5em;"># gtranslate config
