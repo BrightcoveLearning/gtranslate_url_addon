@@ -14,7 +14,7 @@
 <ul>
   <li>Smartling Context Debugger</li>
   <li>Smartling Translator</li>
-  <li>![Translation Management Core Module](translation_management_core.png)</li>
+  <li><img src="translation_management_core.png" alt="translation management core"></li>
 </ul>
   </li>
 </ol>
